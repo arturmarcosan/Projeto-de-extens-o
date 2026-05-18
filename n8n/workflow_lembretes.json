@@ -1,0 +1,93 @@
+{
+  "name": "Lembretes de Estudos",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "⏰ A cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/lembretes/agora",
+        "options": {}
+      },
+      "id": "node-http",
+      "name": "🔍 Buscar lembretes da API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.total }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "node-if",
+      "name": "🔀 Tem lembrete?",
+      "type": "n8n-nodes-base.if",
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "lembretes",
+        "options": {}
+      },
+      "id": "node-split",
+      "name": "📋 Separar cada lembrete",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "seuprojeto@gmail.com",
+        "toEmail": "={{ $json.estudante_email }}",
+        "subject": "📚 Lembrete: {{ $json.materia }} começa agora!",
+        "emailType": "text",
+        "message": "Olá, {{ $json.estudante_nome }}!\n\nEste é um lembrete de que sua aula de {{ $json.materia }} está começando agora ({{ $json.horario }}).\n\nBons estudos! 🚀\n\n---\nBot de Lembretes de Estudos"
+      },
+      "id": "node-email",
+      "name": "📧 Enviar e-mail",
+      "type": "n8n-nodes-base.gmail",
+      "position": [1120, 200]
+    }
+  ],
+  "connections": {
+    "⏰ A cada hora": {
+      "main": [
+        [{ "node": "🔍 Buscar lembretes da API", "type": "main", "index": 0 }]
+      ]
+    },
+    "🔍 Buscar lembretes da API": {
+      "main": [
+        [{ "node": "🔀 Tem lembrete?", "type": "main", "index": 0 }]
+      ]
+    },
+    "🔀 Tem lembrete?": {
+      "main": [
+        [{ "node": "📋 Separar cada lembrete", "type": "main", "index": 0 }]
+      ]
+    },
+    "📋 Separar cada lembrete": {
+      "main": [
+        [{ "node": "📧 Enviar e-mail", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
