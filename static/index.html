@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bot de Lembretes de Estudos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul: #1A73E8;
+    --azul-escuro: #0D47A1;
+    --azul-claro: #E8F0FE;
+    --verde: #34A853;
+    --vermelho: #EA4335;
+    --amarelo: #F9AB00;
+    --bg: #F0F4F8;
+    --card: #FFFFFF;
+    --texto: #1a1a2e;
+    --subtexto: #64748b;
+    --borda: #e2e8f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--azul) 0%, var(--azul-escuro) 100%);
+    padding: 28px 24px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+  }
+  .header-content { position: relative; z-index: 1; }
+  .header-icon { font-size: 32px; margin-bottom: 8px; }
+  header h1 { color: white; font-size: 22px; font-weight: 700; line-height: 1.2; }
+  header p  { color: rgba(255,255,255,0.75); font-size: 13px; margin-top: 4px; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-bottom: 1px solid var(--borda);
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .tab {
+    flex: 1;
+    min-width: 80px;
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--subtexto);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab.active { color: var(--azul); border-bottom-color: var(--azul); }
+  .tab-icon { font-size: 18px; display: block; margin-bottom: 3px; }
+
+  /* CONTEÚDO */
+  .content { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--borda);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card-header {
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 14px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-body { padding: 20px; }
+
+  /* FORM */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--subtexto);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--borda);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--texto);
+    background: var(--bg);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--azul);
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.12);
+    background: white;
+  }
+
+  /* BOTÃO */
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .btn:hover  { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
+  .btn:active { transform: translateY(0); opacity: 0.9; }
+  .btn-azul   { background: var(--azul); }
+  .btn-verde  { background: var(--verde); }
+  .btn-amarelo{ background: var(--amarelo); }
+  .btn-vermelho{ background: var(--vermelho); }
+
+  /* ALERT */
+  .alert {
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 14px;
+    display: none;
+    animation: fadeUp 0.2s ease;
+  }
+  .alert.show { display: flex; align-items: center; gap: 8px; }
+  .alert.ok   { background: #E6F4EA; color: #1e7e34; }
+  .alert.erro { background: #FCE8E6; color: #c0392b; }
+
+  /* LISTA */
+  .item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--bg);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--borda);
+  }
+  .avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--azul);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .item-info { flex: 1; }
+  .item-nome { font-weight: 600; font-size: 14px; }
+  .item-sub  { font-size: 12px; color: var(--subtexto); margin-top: 2px; }
+  .badge {
+    background: var(--azul-claro);
+    color: var(--azul);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* LEMBRETE */
+  .lembrete-info {
+    background: var(--azul-claro);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--azul);
+    font-weight: 600;
+    display: none;
+  }
+  .lembrete-info.show { display: block; }
+
+  /* EMPTY */
+  .empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--subtexto);
+    font-size: 13px;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* SPINNER */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="header-icon">📚</div>
+    <h1>Bot de Lembretes<br>de Estudos</h1>
+    <p>Gerencie horários e receba lembretes automáticos</p>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="mudarTab('cadastrar')">
+    <span class="tab-icon">👤</span>Estudante
+  </div>
+  <div class="tab" onclick="mudarTab('materia')">
+    <span class="tab-icon">📘</span>Matéria
+  </div>
+  <div class="tab" onclick="mudarTab('lista')">
+    <span class="tab-icon">👥</span>Lista
+  </div>
+  <div class="tab" onclick="mudarTab('lembretes')">
+    <span class="tab-icon">🔔</span>Lembretes
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ABA 1: CADASTRAR ESTUDANTE -->
+  <div class="section active" id="tab-cadastrar">
+    <div class="card">
+      <div class="card-header" style="background: linear-gradient(135deg, #1A73E8, #0D47A1)">
+        👤 Cadastrar Estudante
+      </div>
+      <div class="card-body">
+        <div id="alert-estudante" class="alert"></div>
+        <div class="field">
+          <label>Nome completo</label>
+          <input type="text" id="nome" placeholder="Ex: Ana Silva">
+        </div>
+        <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="email" placeholder="Ex: ana@email.com">
+        </div>
+        <button class="btn btn-azul" onclick="cadastrarEstudante(this)">
+          ✅ Cadastrar Estudante
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA 2: CADASTRAR MATÉRIA -->
+  <div class="section" id="tab-materia">
+    <div class="card">
+      <div class="card-header" style="background: linear-gradient(135deg, #F9AB00, #E65100)">
+        📘 Cadastrar Matéria
+      </div>
+      <div class="card-body">
+        <div id="alert-materia" class="alert"></div>
+        <div class="field">
+          <label>ID do Estudante</label>
+          <input type="number" id="est-id" placeholder="Ex: 1">
+        </div>
+        <div class="field">
+          <label>Nome da Matéria</label>
+          <input type="text" id="mat-nome" placeholder="Ex: Cálculo">
+        </div>
+        <div class="field">
+          <label>Dia da Semana</label>
+          <select id="mat-dia">
+            <option value="">Selecione...</option>
+            <option value="segunda">Segunda-feira</option>
+            <option value="terca">Terça-feira</option>
+            <option value="quarta">Quarta-feira</option>
+            <option value="quinta">Quinta-feira</option>
+            <option value="sexta">Sexta-feira</option>
+            <option value="sabado">Sábado</option>
+            <option value="domingo">Domingo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Horário</label>
+          <input type="time" id="mat-horario">
+        </div>
+        <button class="btn btn-amarelo" onclick="cadastrarMateria(this)">
+          ➕ Cadastrar Matéria
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA 3: LISTA -->
+  <div class="section" id="tab-lista">
+    <div class="card">
+      <div class="card-header" style="background: linear-gradient(135deg, #34A853, #1B5E20)">
+        👥 Estudantes Cadastrados
+      </div>
+      <div class="card-body">
+        <div id="lista-estudantes">
+          <div class="empty">
+            <div class="empty-icon">⏳</div>
+            Carregando...
+          </div>
+        </div>
+        <button class="btn btn-verde" onclick="carregarEstudantes()" style="margin-top:8px">
+          🔄 Atualizar Lista
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABA 4: LEMBRETES -->
+  <div class="section" id="tab-lembretes">
+    <div class="card">
+      <div class="card-header" style="background: linear-gradient(135deg, #EA4335, #B71C1C)">
+        🔔 Lembretes Agora
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px; color:var(--subtexto); margin-bottom:16px">
+          Veja quem tem aula no horário atual. O n8n usa esta informação para disparar os e-mails automaticamente.
+        </p>
+        <div id="lembrete-info" class="lembrete-info"></div>
+        <div id="lista-lembretes"></div>
+        <button class="btn btn-vermelho" onclick="verLembretes(this)">
+          🔍 Verificar Agora
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin;
+
+function mudarTab(nome) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['cadastrar','materia','lista','lembretes'][i] === nome);
+  });
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + nome).classList.add('active');
+  if (nome === 'lista') carregarEstudantes();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function alerta(id, msg, tipo) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert show ${tipo}`;
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function setLoading(btn, loading) {
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? '<span class="spinner"></span> Aguarde...'
+    : btn.dataset.original;
+}
+
+async function cadastrarEstudante(btn) {
+  const nome  = document.getElementById('nome').value.trim();
+  const email = document.getElementById('email').value.trim();
+  if (!nome || !email) { alerta('alert-estudante', '⚠️ Preencha nome e e-mail!', 'erro'); return; }
+  if (!btn.dataset.original) btn.dataset.original = btn.innerHTML;
+  setLoading(btn, true);
+  try {
+    const r = await fetch(`${API}/estudantes`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({nome, email})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Erro');
+    alerta('alert-estudante', `✅ Cadastrado com ID ${d.id}! Use este ID para cadastrar matérias.`, 'ok');
+    document.getElementById('nome').value = '';
+    document.getElementById('email').value = '';
+    toast(`Estudante cadastrado! ID: ${d.id}`);
+  } catch(e) {
+    alerta('alert-estudante', `❌ ${e.message}`, 'erro');
+  }
+  setLoading(btn, false);
+}
+
+async function cadastrarMateria(btn) {
+  const id      = document.getElementById('est-id').value;
+  const nome    = document.getElementById('mat-nome').value.trim();
+  const dia     = document.getElementById('mat-dia').value;
+  const horario = document.getElementById('mat-horario').value;
+  if (!id || !nome || !dia || !horario) { alerta('alert-materia', '⚠️ Preencha todos os campos!', 'erro'); return; }
+  if (!btn.dataset.original) btn.dataset.original = btn.innerHTML;
+  setLoading(btn, true);
+  try {
+    const r = await fetch(`${API}/materias`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({estudante_id: parseInt(id), nome, dia_semana: dia, horario})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Erro');
+    alerta('alert-materia', `✅ Matéria "${nome}" cadastrada com sucesso!`, 'ok');
+    document.getElementById('mat-nome').value = '';
+    document.getElementById('mat-horario').value = '';
+    document.getElementById('mat-dia').value = '';
+    toast('Matéria cadastrada!');
+  } catch(e) {
+    alerta('alert-materia', `❌ ${e.message}`, 'erro');
+  }
+  setLoading(btn, false);
+}
+
+async function carregarEstudantes() {
+  const lista = document.getElementById('lista-estudantes');
+  lista.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Carregando...</div>';
+  try {
+    const r = await fetch(`${API}/estudantes`);
+    const dados = await r.json();
+    if (!dados.length) {
+      lista.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>Nenhum estudante cadastrado ainda.</div>';
+      return;
+    }
+    lista.innerHTML = dados.map(e => `
+      <div class="item-card">
+        <div class="avatar">${e.nome[0].toUpperCase()}</div>
+        <div class="item-info">
+          <div class="item-nome">${e.nome}</div>
+          <div class="item-sub">${e.email}</div>
+        </div>
+        <span class="badge">ID ${e.id}</span>
+      </div>
+    `).join('');
+  } catch(e) {
+    lista.innerHTML = '<div class="empty"><div class="empty-icon">❌</div>API offline.</div>';
+  }
+}
+
+async function verLembretes(btn) {
+  if (!btn.dataset.original) btn.dataset.original = btn.innerHTML;
+  setLoading(btn, true);
+  const info  = document.getElementById('lembrete-info');
+  const lista = document.getElementById('lista-lembretes');
+  try {
+    const r = await fetch(`${API}/lembretes/agora`);
+    const d = await r.json();
+    const dias = {segunda:'Segunda',terca:'Terça',quarta:'Quarta',quinta:'Quinta',sexta:'Sexta',sabado:'Sábado',domingo:'Domingo'};
+    info.innerHTML = `📅 ${dias[d.dia] || d.dia} &nbsp;|&nbsp; 🕐 ${d.hora} &nbsp;|&nbsp; ${d.total} lembrete(s) encontrado(s)`;
+    info.classList.add('show');
+    if (!d.total) {
+      lista.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>Nenhuma aula no horário atual.</div>';
+    } else {
+      lista.innerHTML = d.lembretes.map(l => `
+        <div class="item-card">
+          <div class="avatar" style="background:var(--vermelho)">${l.materia[0]}</div>
+          <div class="item-info">
+            <div class="item-nome">${l.materia}</div>
+            <div class="item-sub">${l.estudante_nome}</div>
+            <div class="item-sub">📧 ${l.estudante_email}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch(e) {
+    lista.innerHTML = '<div class="empty"><div class="empty-icon">❌</div>API offline.</div>';
+  }
+  setLoading(btn, false);
+}
+</script>
+</body>
+</html>
