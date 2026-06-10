@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from api.database import get_connection, criar_tabelas
 from datetime import datetime
@@ -10,6 +12,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ─────────────────────────────────────────
 # MODELOS (formato dos dados que a API recebe)
@@ -42,8 +45,7 @@ def startup():
 
 @app.get("/")
 def raiz():
-    return {"status": "API funcionando ✅"}
-
+    return FileResponse("static/index.html")
 
 # ─────────────────────────────────────────
 # ESTUDANTES
@@ -156,7 +158,7 @@ def lembretes_agora():
     }
 
     dia_atual = dias[agora.weekday()]
-    hora_atual = agora.strftime("%H:%M")
+    hora_atual = agora.strftime("%H:00")
 
     conn = get_connection()
     cursor = conn.cursor()
